@@ -5,18 +5,27 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Build APK
-        uses: koddr/website-to-apk-action@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          url: https://fuesiclear-cpu.github.io/
-          name: MyWebProject
-          
+          node-version: '20'
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Build APK from URL
+        # We use 'yes' to skip the interactive questions and keep it default
+        run: |
+          yes | bubblewrap init --manifest=https://fuesiclear-cpu.github.io/manifest.json
+          bubblewrap build
+          mkdir output
+          cp *.apk output/
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: My-Clean-App
-          path: ./*.apk
-
+          path: output/*.apk
