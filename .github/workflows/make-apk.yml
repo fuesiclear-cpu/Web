@@ -8,24 +8,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Build APK
+        uses: jmshrv/pwa-to-apk@v1.1.0
         with:
-          node-version: '20'
-
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
-
-      - name: Build APK from URL
-        # We use 'yes' to skip the interactive questions and keep it default
-        run: |
-          yes | bubblewrap init --manifest=https://fuesiclear-cpu.github.io/manifest.json
-          bubblewrap build
-          mkdir output
-          cp *.apk output/
+          url: https://fuesiclear-cpu.github.io/
+          name: MyWebProject
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: My-Clean-App
-          path: output/*.apk
+          name: My-App-Package
+          path: ./*.apk
