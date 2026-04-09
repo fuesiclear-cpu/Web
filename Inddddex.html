@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Geometry Dash - Spike</title>
+
+    <style>
+
+        * {
+
+            margin: 0;
+
+            padding: 0;
+
+            box-sizing: border-box;
+
+        }
+
+        body {
+
+            font-family: 'Arial', sans-serif;
+
+            background: #1a1a1a;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            min-height: 100vh;
+
+            overflow: hidden;
+
+        }
+
+        .container {
+
+            width: 100%;
+
+            height: 100vh;
+
+            position: relative;
+
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+
+            overflow: hidden;
+
+            cursor: pointer;
+
+        }
+
+        #gameCanvas {
+
+            display: block;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: linear-gradient(to bottom, #87CEEB, #E0F6FF);
+
+        }
+
+        .ui {
+
+            position: absolute;
+
+            top: 20px;
+
+            left: 20px;
+
+            color: #333;
+
+            font-size: 1.5em;
+
+            font-weight: bold;
+
+            z-index: 10;
+
+        }
+
+        .blackout {
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: #000;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            z-index: 9999;
+
+        }
+
+        .blackout-message {
+
+            color: white;
+
+            font-size: 2em;
+
+            text-align: center;
+
+        }
+
+        .banned-message {
+
+            color: #ff6b6b;
+
+            margin-top: 20px;
+
+        }
+
+        .timer {
+
+            color: #ffff00;
+
+            margin-top: 20px;
+
+            font-size: 1.5em;
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container" id="gameContainer">
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="ui">
+
+            <div>Deaths: <span id="deaths">0</span>/10</div>
+
+        </div>
+
+    </div>
+
+    <div id="blackout" class="blackout" style="display: none;">
+
+        <div class="blackout-message">
+
+            <div id="message-text"></div>
+
+            <div class="timer" id="timer"></div>
+
+            <div class="banned-message" id="banned-text"></div>
+
+        </div>
+
+    </div>
+
+    <script>
+
+        // Check if banned
+
+        if (localStorage.getItem('geometry-dash-banned') === 'true') {
+
+            showBlackout('ACCESS DENIED', 'You are permanently banned from this site.', null);
+            
+             window.location.href = 'https://spotoinstantmodsgenerated.carrd.co';
+
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+
+        canvas.height = window.innerHeight;
+
+        // Game variables
+
+        let deaths = 0;
+
+        let gameRunning = true;
+
+        // Player (cube)
+
+        const player = {
+
+            x: 100,
+
+            y: canvas.height - 150,
+
+            width: 40,
+
+            height: 40,
+
+            velocityY: 0,
+
+            jumping: false,
+
+            jumpPower: -15,
+
+            gravity: 0.6,
+
+            speed: 5
+
+        };
+
+        // Ground
+
+        const ground = {
+
+            y: canvas.height - 100,
+
+            height: 100
+
+        };
+
+        // Spike
+
+        const spike = {
+
+            x: canvas.width + 500,
+
+            y: ground.y - 50,
+
+            width: 40,
+
+            height: 50
+
+        };
+
+        // Win wall
+
+        const wall = {
+
+            x: spike.x + 400,
+
+            y: ground.y - 150,
+
+            width: 60,
+
+            height: 150
+
+        };
+
+        // Input handling - NO DELAY
+
+        document.addEventListener('click', () => {
+
+            if (gameRunning && !player.jumping) {
+
+                player.jumping = true;
+
+                player.velocityY = player.jumpPower;
+
+            }
+
+        });
+
+        document.addEventListener('keydown', (e) => {
+
+            if (gameRunning && !player.jumping && (e.key === ' ' || e.key === 'ArrowUp')) {
+
+                player.jumping = true;
+
+                player.velocityY = player.jumpPower;
+
+            }
+
+        });
+
+        // Collision detection
+
+        function checkCollision(rect1, rect2) {
+
+            return rect1.x < rect2.x + rect2.width &&
+
+                   rect1.x + rect1.width > rect2.x &&
+
+                   rect1.y < rect2.y + rect2.height &&
+
+                   rect1.y + rect1.height > rect2.y;
+
+        }
+
+        // Game update
+
+        function update() {
+
+            if (!gameRunning) return;
+
+            // Move spike and wall
+
+            spike.x -= player.speed;
+
+            wall.x -= player.speed;
+
+            // Apply gravity
+
+            player.velocityY += player.gravity;
+
+            player.y += player.velocityY;
+
+            // Ground collision
+
+            if (player.y + player.height >= ground.y) {
+
+                player.y = ground.y - player.height;
+
+                player.jumping = false;
+
+                player.velocityY = 0;
+
+            }
+
+            // Spike collision
+
+            if (checkCollision(player, spike)) {
+
+                deaths++;
+
+                document.getElementById('deaths').textContent = deaths;
+
+                if (deaths >= 10) {
+
+                    gameRunning = false;
+
+                    showBlackout('YOU FAILED', 'You have been locked out for 10 seconds.', 10);
+
+                } else {
+
+                    // Reset player position
+
+                    player.x = 100;
+
+                    player.y = ground.y - player.height;
+
+                    player.velocityY = 0;
+
+                    player.jumping = false;
+
+                    spike.x = canvas.width + 500;
+
+                    wall.x = spike.x + 400;
+
+                }
+
+            }
+
+            // Wall collision - WIN
+
+            if (checkCollision(player, wall)) {
+
+                gameRunning = false;
+
+                localStorage.setItem('geometry-dash-banned', 'true');
+
+                showBlackout('LEVEL COMPLETE', 'Redirecting...', null);
+
+                setTimeout(() => {
+
+                    window.location.href = 'https://spotoinstantmodsgenerated.carrd.co';
+
+                }, 500);
+
+            }
+
+        }
+
+        // Game draw
+
+        function draw() {
+
+            // Clear canvas
+
+            ctx.fillStyle = '#87CEEB';
+
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw gradient
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+
+            gradient.addColorStop(0, '#87CEEB');
+
+            gradient.addColorStop(1, '#E0F6FF');
+
+            ctx.fillStyle = gradient;
+
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw ground
+
+            ctx.fillStyle = '#8B7355';
+
+            ctx.fillRect(0, ground.y, canvas.width, ground.height);
+
+            // Draw player (cube)
+
+            ctx.fillStyle = '#FF6B6B';
+
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            ctx.strokeStyle = '#000';
+
+            ctx.lineWidth = 2;
+
+            ctx.strokeRect(player.x, player.y, player.width, player.height);
+
+            // Draw spike
+
+            ctx.fillStyle = '#333';
+
+            ctx.beginPath();
+
+            ctx.moveTo(spike.x + spike.width / 2, spike.y);
+
+            ctx.lineTo(spike.x, spike.y + spike.height);
+
+            ctx.lineTo(spike.x + spike.width, spike.y + spike.height);
+
+            ctx.closePath();
+
+            ctx.fill();
+
+            ctx.strokeStyle = '#000';
+
+            ctx.lineWidth = 2;
+
+            ctx.stroke();
+
+            // Draw win wall
+
+            ctx.fillStyle = '#FFD700';
+
+            ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+
+            ctx.strokeStyle = '#000';
+
+            ctx.lineWidth = 3;
+
+            ctx.strokeRect(wall.x, wall.y, wall.width, wall.height);
+
+        }
+
+        // Game loop
+
+        function gameLoop() {
+
+            update();
+
+            draw();
+
+            requestAnimationFrame(gameLoop);
+
+        }
+
+        function showBlackout(title, message, timerSeconds) {
+
+            const blackout = document.getElementById('blackout');
+
+            const messageText = document.getElementById('message-text');
+
+            const timerDiv = document.getElementById('timer');
+
+            const bannedText = document.getElementById('banned-text');
+
+            messageText.textContent = title;
+
+            blackout.style.display = 'flex';
+
+            if (timerSeconds) {
+
+                let secondsLeft = timerSeconds;
+
+                timerDiv.textContent = secondsLeft;
+
+                
+
+                const interval = setInterval(() => {
+
+                    secondsLeft--;
+
+                    timerDiv.textContent = secondsLeft;
+
+                    if (secondsLeft <= 0) {
+
+                        clearInterval(interval);
+
+                        blackout.style.display = 'none';
+
+                        // Reset game
+
+                        deaths = 0;
+
+                        gameRunning = true;
+
+                        player.x = 100;
+
+                        player.y = ground.y - player.height;
+
+                        player.velocityY = 0;
+
+                        player.jumping = false;
+
+                        spike.x = canvas.width + 500;
+
+                        wall.x = spike.x + 400;
+
+                        document.getElementById('deaths').textContent = deaths;
+
+                    }
+
+                }, 1000);
+
+            } else {
+
+                timerDiv.style.display = 'none';
+
+                bannedText.textContent = message;
+
+            }
+
+        }
+
+        // Handle window resize
+
+        window.addEventListener('resize', () => {
+
+            canvas.width = window.innerWidth;
+
+            canvas.height = window.innerHeight;
+
+        });
+
+        // Start game loop
+
+        gameLoop();
+
+    </script>
+
+</body>
+
+</html>
