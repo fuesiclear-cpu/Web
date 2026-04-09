@@ -4,21 +4,25 @@ on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Build APK
-        uses: jmshrv/pwa-to-apk@v1.1.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          url: https://fuesiclear-cpu.github.io/
-          name: MyWebProject
+          node-id: 20
+
+      - name: Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
+
+      - name: Build APK
+        run: |
+          # This tells Google's tool to just build it without asking questions
+          bubblewrap build --manifest=https://fuesiclear-cpu.github.io/manifest.json --yes
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: My-App-Package
+          name: My-App
           path: ./*.apk
