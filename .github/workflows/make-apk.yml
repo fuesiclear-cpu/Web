@@ -1,28 +1,23 @@
-name: Build My APK
+name: Build APK
 on: [push, workflow_dispatch]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Build Android APK
+        uses: khushit-shah/pwa-to-apk@v0.1.2
         with:
-          node-id: 20
-
-      - name: Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
-
-      - name: Build APK
-        run: |
-          # This tells Google's tool to just build it without asking questions
-          bubblewrap build --manifest=https://fuesiclear-cpu.github.io/manifest.json --yes
+          url: https://fuesiclear-cpu.github.io/
+          name: MyWebProject
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: My-App
+          name: My-Android-App
           path: ./*.apk
